@@ -193,4 +193,5 @@
     </div>
 </div>
 
+<?php include 'modal-peminjaman.php'; ?>
 <?php include 'footer.php'; ?>
