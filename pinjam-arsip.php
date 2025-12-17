@@ -19,7 +19,7 @@
  * 7. Redirect kembali dengan pesan sukses/error
  */
 
-include 'config.php';
+include 'konektor.php';
 session_start();
 
 // STEP 1: Validasi User Login
@@ -29,28 +29,58 @@ if (!isset($_SESSION['id'])) {
     exit();
 }
 
+// HANDLER AJAX REQUEST (DITAMBAHKAN UNTUK MENGHINDARI PENAMBAHAN FILE BARU)
+if (isset($_GET['action'])) {
+    header('Content-Type: application/json');
+    $action = $_GET['action'];
+
+    if ($action == 'get_sub_klasifikasi' && isset($_GET['id_kode'])) {
+        $id_kode = mysqli_real_escape_string($db, $_GET['id_kode']);
+        $query = "SELECT * FROM sub_klasifikasi WHERE id_kode = '$id_kode' ORDER BY nama_sub ASC";
+        $result = mysqli_query($db, $query);
+        $data = [];
+        while ($row = mysqli_fetch_assoc($result)) {
+            $data[] = $row;
+        }
+        echo json_encode($data);
+        exit;
+    }
+
+    if ($action == 'get_sub_sub_klasifikasi' && isset($_GET['id_sub'])) {
+        $id_sub = mysqli_real_escape_string($db, $_GET['id_sub']);
+        $query = "SELECT * FROM sub_sub_klasifikasi WHERE id_sub = '$id_sub' ORDER BY nama_subsub ASC";
+        $result = mysqli_query($db, $query);
+        $data = [];
+        while ($row = mysqli_fetch_assoc($result)) {
+            $data[] = $row;
+        }
+        echo json_encode($data);
+        exit;
+    }
+}
+
 // STEP 2: Ambil Data dari Form POST
 // Data ini dikirim dari modal_peminjaman.php
-$arsip_type = mysqli_real_escape_string($conn, $_POST['arsip_type']);  // vital/permanen/aktif/inaktif
-$arsip_id = mysqli_real_escape_string($conn, $_POST['arsip_id']);      // ID arsip yang dipinjam
+$arsip_type = mysqli_real_escape_string($db, $_POST['arsip_type']);  // vital/permanen/aktif/inaktif
+$arsip_id = mysqli_real_escape_string($db, $_POST['arsip_id']);      // ID arsip yang dipinjam
 $user_id = $_SESSION['id'];                                             // ID user yang meminjam
 
 // Data detail peminjaman
-$tanggal_pinjam = mysqli_real_escape_string($conn, $_POST['tanggal_pinjam']);
-$uraian_informasi = mysqli_real_escape_string($conn, $_POST['uraian_informasi']);
-$no_box = mysqli_real_escape_string($conn, $_POST['no_box']);
+$tanggal_pinjam = mysqli_real_escape_string($db, $_POST['tanggal_pinjam']);
+$uraian_informasi = mysqli_real_escape_string($db, $_POST['uraian_informasi']);
+$no_box = mysqli_real_escape_string($db, $_POST['no_box']);
 
 // Klasifikasi data dari cascading dropdowns
-$kode_klasifikasi = mysqli_real_escape_string($conn, $_POST['kode_klasifikasi']); // Kode lengkap untuk display
-$id_kode = isset($_POST['id_kode']) ? mysqli_real_escape_string($conn, $_POST['id_kode']) : '';
-$id_sub = isset($_POST['id_sub']) ? mysqli_real_escape_string($conn, $_POST['id_sub']) : '';
-$id_subsub = isset($_POST['id_subsub']) ? mysqli_real_escape_string($conn, $_POST['id_subsub']) : '';
+$kode_klasifikasi = mysqli_real_escape_string($db, $_POST['kode_klasifikasi']); // Kode lengkap untuk display
+$id_kode = isset($_POST['id_kode']) ? mysqli_real_escape_string($db, $_POST['id_kode']) : '';
+$id_sub = isset($_POST['id_sub']) ? mysqli_real_escape_string($db, $_POST['id_sub']) : '';
+$id_subsub = isset($_POST['id_subsub']) ? mysqli_real_escape_string($db, $_POST['id_subsub']) : '';
 
-$pemilik_arsip = mysqli_real_escape_string($conn, $_POST['pemilik_arsip']);
-$periode = mysqli_real_escape_string($conn, $_POST['periode']);
-$alasan_peminjaman = mysqli_real_escape_string($conn, $_POST['alasan_peminjaman']);
-$nama_peminjam = mysqli_real_escape_string($conn, $_POST['nama_peminjam']);
-$instansi_peminjam = mysqli_real_escape_string($conn, $_POST['instansi_peminjam']);
+$pemilik_arsip = mysqli_real_escape_string($db, $_POST['pemilik_arsip']);
+$periode = mysqli_real_escape_string($db, $_POST['periode']);
+$alasan_peminjaman = mysqli_real_escape_string($db, $_POST['alasan_peminjaman']);
+$nama_peminjam = mysqli_real_escape_string($db, $_POST['nama_peminjam']);
+$instansi_peminjam = mysqli_real_escape_string($db, $_POST['instansi_peminjam']);
 
 // STEP 3: Validasi Tipe Arsip
 // Hanya terima tipe arsip yang valid
@@ -69,7 +99,7 @@ $check_query = "SELECT * FROM peminjaman_arsip
                 AND arsip_id = '$arsip_id' 
                 AND status = 'aktif' 
                 AND tanggal_expired > NOW()";  // Cek apakah masih belum expired
-$check_result = mysqli_query($conn, $check_query);
+$check_result = mysqli_query($db, $check_query);
 
 if (mysqli_num_rows($check_result) > 0) {
     // User sudah meminjam file ini dan masih aktif
@@ -108,7 +138,7 @@ $insert_query = "INSERT INTO peminjaman_arsip
 
 // STEP 7: Redirect dengan Pesan
 // Kembali ke halaman arsip dengan alert sukses atau error
-if (mysqli_query($conn, $insert_query)) {
+if (mysqli_query($db, $insert_query)) {
     // Berhasil menyimpan peminjaman
     header("location:arsip_$arsip_type.php?alert=pinjam_berhasil");
 } else {

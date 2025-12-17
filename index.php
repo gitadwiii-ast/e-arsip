@@ -6,6 +6,7 @@ if (!isset($_SESSION['captcha'])) {
     $_SESSION['captcha'] = rand(10000,99999);
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,12 +14,10 @@ if (!isset($_SESSION['captcha'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | E-Arsip</title>
     <link rel="stylesheet" href="vendor/twbs/bootstrap/dist/css/bootstrap.min.css">
-    <script src="vendor/twbs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 
 <body class="gradient-bg d-flex align-items-center justify-content-center vh-100">
-
 <div class="container px-3">
     <div class="glass-panel shadow-lg rounded-4 p-4 p-md-5 w-100 mx-auto" style="max-width: 520px; position: relative;">
 
