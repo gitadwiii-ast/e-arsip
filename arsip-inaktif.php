@@ -78,7 +78,7 @@ $user_id = $_SESSION['id'] ?? null;
                             }
 
                             // Query for arsip_permanen with JOIN to kode_klasifikasi and peminjaman_arsip
-                            $user_id = $_SESSION['id'];
+                            // $user_id = $_SESSION['id'];
                             $query = "SELECT ai.*, 
                                              ai.id_kode,
                                              ai.id_sub,

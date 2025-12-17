@@ -2,12 +2,20 @@
 $user_id = $_SESSION['id'] ?? null;
 ?>
 
+<style>
+    table th,
+    table td {
+        white-space: normal;
+        word-wrap: break-word;
+        vertical-align: middle;
+    }
+</style>
 
 <div class="d-flex">
     <?php include 'header.php';?>
     <main class="flex-grow-1 p-4" style="background-color:#f3f4f6; min-height:100vh; min-width: 0;">
         <div class="container-fluid">
-            <div class="card shadow-lg rounded-3 overflow-hidden">
+            <div class="card shadow-lg rounded-3">
 
 
         <!-- HEADER -->
@@ -41,32 +49,7 @@ $user_id = $_SESSION['id'] ?? null;
                           OR av.nomor_arsip LIKE '%$search%'
                           OR av.lokasi_simpan LIKE '%$search%'";
             }
-
-            // QUERY DATABASE
-            // $query = "SELECT av.*,
-            //         kk.kode_klasifikasi,
-            //         kk.deskripsi AS deskripsi_kode,
-            //         ja.nama_jenis,
-            //         p.id_peminjaman,
-            //         p.tanggal_expired
-            // FROM arsip_vital av
-            // LEFT JOIN kode_klasifikasi kk 
-            //     ON av.id_kode = kk.id_kode
-            // LEFT JOIN jenis_arsip ja
-            //     ON av.id_jenis = ja.id_jenis
-            // LEFT JOIN peminjaman_arsip p 
-            //     ON p.arsip_type = 'vital'
-            //     AND p.arsip_id = av.id_arsip_vital
-            //     AND p.user_id = '$user_id'
-            //     AND p.status = 'aktif'
-            //     AND p.tanggal_expired > NOW()
-            // $where
-            // ORDER BY av.id_arsip_vital DESC";
-
-
-            // $result = mysqli_query($db, $query);
-            // $no = 1;
-            // ?>
+            ?>
 
             <!-- TABLE -->
 
@@ -75,14 +58,14 @@ $user_id = $_SESSION['id'] ?? null;
                             <thead class="table-light text-center align-middle">
                                 <tr>
                                     <th>No</th>                                
-                                    <th style="min-width: 150px;">Uraian Informasi</th>
-                                    <th style="min-width: 100px;">Klasifikasi</th>
-                                    <th style="min-width: 150px;">Jenis Arsip</th>
-                                    <th style="min-width: 130px;">Tingkat Perkembangan</th>
-                                    <th style="min-width: 100px;">Kurun Waktu</th>
-                                    <th style="min-width: 150px;">Jumlah</th>
-                                    <th style="min-width: 150px;">Ket. Nasib Akhir / No Box</th>
-                                    <th style="min-width: 130px;">Aksi</th>
+                                    <th>Uraian Informasi</th>
+                                    <th>Klasifikasi</th>
+                                    <th>Jenis Arsip</th>
+                                    <th>Tingkat Perkembangan</th>
+                                    <th>Kurun Waktu</th>
+                                    <th>Jumlah</th>
+                                    <th>Ket. Nasib Akhir / No Box</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -102,7 +85,7 @@ $user_id = $_SESSION['id'] ?? null;
                             }
 
                             // Query for arsip_permanen with JOIN to kode_klasifikasi and peminjaman_arsip
-                            $user_id = $_SESSION['id'];
+                            // $user_id = $_SESSION['id'];
                             $query = "
                                  SELECT ap.*, 
                                     kk.kode_klasifikasi,
