@@ -30,6 +30,8 @@ if (!$user || $password !== $user['password']) {
 }
 
 // Jika login berhasil
+$_SESSION['id'] = $user['id'];
+$_SESSION['status'] = "login";
 $_SESSION['login'] = true;
 $_SESSION['username'] = $user['username'];
 $_SESSION['nama_lengkap'] = $user['nama_lengkap'];

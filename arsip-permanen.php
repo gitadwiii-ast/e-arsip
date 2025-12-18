@@ -5,6 +5,36 @@ $user_id = $_SESSION['id'] ?? null;
 include 'header.php';
 ?>
 
+<style>
+    /* Bungkus tabel */
+    .table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Paksa tabel punya lebar minimum */
+    .table-scroll table {
+        min-width: 1200px;
+        /* boleh 1000–1400 */
+    }
+
+    /* Supaya rapi */
+    th,
+    td {
+        vertical-align: middle;
+        font-size: 14px;
+        text-align: center;
+    }
+
+    /* Kolom tertentu jangan patah */
+    /* td:nth-child(1),
+td:nth-child(7),
+td:nth-child(9) {
+    white-space: nowrap;
+} */
+</style>
+
+
 <div class="d-flex">
     <?php include 'sidebar.php'; ?>
     <main class="flex-grow-1 p-4" style="background-color:#f3f4f6; min-height:100vh; min-width: 0;">
@@ -36,13 +66,14 @@ include 'header.php';
 
                     <?php
                     // FILTER SEARCH
+                    // FILTER SEARCH (ARSIP PERMANEN - FIX)
                     $where = "";
                     if (!empty($_GET['search'])) {
                         $search = mysqli_real_escape_string($db, $_GET['search']);
-                        $where = "WHERE av.uraian_informasi LIKE '%$search%'
-                          OR av.nomor_arsip LIKE '%$search%'
-                          OR av.lokasi_simpan LIKE '%$search%'";
+                        $where = "WHERE 
+                            ap.uraian_informasi LIKE '%$search%'";
                     }
+
                     ?>
 
                     <!-- TABLE -->
@@ -51,8 +82,8 @@ include 'header.php';
                         <table class="table table-bordered table-hover align-middle">
                             <thead class="table-light text-center align-middle">
                                 <tr>
-                                    <th>No</th>
-                                    <th>Uraian Informasi</th>
+                                    <th style="width:45px; text-align:center; white-space:nowrap;">No</th>
+                                    <th style="width: 250px;">Uraian Informasi</th>
                                     <th>Klasifikasi</th>
                                     <th>Jenis Arsip</th>
                                     <th>Tingkat Perkembangan</th>
@@ -65,19 +96,19 @@ include 'header.php';
                             <tbody>
                                 <?php
                                 $no = 1;
-                                $where_conditions = [];
-
-                                // Filter by search
-                                if (isset($_GET['search']) && $_GET['search'] != '') {
-                                    $search = mysqli_real_escape_string($db, $_GET['search']);
-                                    $where_conditions[] = "(ap.uraian_informasi LIKE '%$search%' OR ap.nomor_arsip LIKE '%$search%' OR ap.lokasi_simpan LIKE '%$search%')";
-                                }
-
-                                $where = "";
-                                if (count($where_conditions) > 0) {
-                                    $where = "WHERE " . implode(" AND ", $where_conditions);
-                                }
-
+                                // $where_conditions = [];
+                                
+                                // // Filter by search
+                                // if (isset($_GET['search']) && $_GET['search'] != '') {
+                                //     $search = mysqli_real_escape_string($db, $_GET['search']);
+                                //     $where_conditions[] = "(ap.uraian_informasi LIKE '%$search%' OR ap.nomor_arsip LIKE '%$search%' OR ap.lokasi_simpan LIKE '%$search%')";
+                                // }
+                                
+                                // $where = "";
+                                // if (count($where_conditions) > 0) {
+                                //     $where = "WHERE " . implode(" AND ", $where_conditions);
+                                // }
+                                
                                 // Query for arsip_permanen with JOIN to kode_klasifikasi and peminjaman_arsip
                                 // $user_id = $_SESSION['id'];
                                 $query = "
@@ -114,7 +145,7 @@ include 'header.php';
                                         $has_borrowing = !empty($p['id_peminjaman']);
                                         ?>
                                         <tr>
-                                            <td><?= $no++; ?></td>
+                                            <td style="width:40px; text-align:center"><?= $no++; ?></td>
 
                                             <td><?= htmlspecialchars($p['uraian_informasi']); ?></td>
 
@@ -170,7 +201,7 @@ include 'header.php';
                                                         '<?= $p['id_kode']; ?>',
                                                         '<?= $p['id_sub'] ?? ''; ?>',
                                                         '<?= $p['id_subsub'] ?? ''; ?>'
-                                                    )">
+                                                    )"><i class="fas fa-hand-holding mr-2"></i>
                                                         Pinjam
                                                     </button>
                                                 <?php } ?>

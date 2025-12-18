@@ -5,6 +5,47 @@ $user_id = $_SESSION['id'] ?? null;
 include 'header.php';
 ?>
 
+<style>
+    /* Container tabel */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Jangan paksa tabel mengecil */
+    table {
+        min-width: 1000px;
+        /* bebas, bisa 900–1200 */
+    }
+
+    /* Umum */
+    th,
+    td {
+        vertical-align: middle;
+        word-wrap: break-word;
+        font-size: 14px;
+    }
+
+    /* Kolom khusus */
+    .col-no {
+        width: 45px;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .col-nomor {
+        width: 140px;
+        font-family: monospace;
+        white-space: nowrap;
+    }
+
+    .col-aksi {
+        width: 120px;
+        text-align: center;
+        white-space: nowrap;
+    }
+</style>
+
 <div class="d-flex">
     <?php include 'sidebar.php'; ?>
     <main class="flex-grow-1 p-4" style="background-color:#f3f4f6; min-height:100vh; min-width: 0;">
@@ -16,7 +57,7 @@ include 'header.php';
                 <div class="card-header text-white d-flex justify-content-between align-items-center"
                     style="background: linear-gradient(90deg,#4f46e5,#4338ca);">
                     <h5 class="mb-0 fw-bold">
-                        <i class="fas fa-archive me-2"></i> Data Arsip Permanen
+                        <i class="fas fa-archive me-2"></i> Data Arsip Inaktif
                     </h5>
                 </div>
 
@@ -34,166 +75,138 @@ include 'header.php';
                         </div>
                     </form>
 
+
                     <?php
                     // FILTER SEARCH
+                    // FILTER SEARCH (ARSIP INAKTIF - FIX)
                     $where = "";
-                    if (!empty($_GET['search'])) {
+                    if (isset($_GET['search']) && $_GET['search'] !== '') {
                         $search = mysqli_real_escape_string($db, $_GET['search']);
-                        $where = "WHERE av.uraian_informasi LIKE '%$search%'
-                          OR av.nomor_arsip LIKE '%$search%'
-                          OR av.lokasi_simpan LIKE '%$search%'";
-                    } ?>
+                        $where = "WHERE 
+                                        arsip_inaktif.uraian_arsip LIKE '%$search%'
+                                        OR arsip_inaktif.nomor_arsip LIKE '%$search%'
+                                        OR arsip_inaktif.keterangan LIKE '%$search%'";
+                    }
+
+
+
+                    $query_string = "
+                                    SELECT arsip_inaktif.*, 
+                                        kode_klasifikasi.kode_klasifikasi,
+                                        kode_klasifikasi.deskripsi,
+                                        sub_klasifikasi.nama_sub,
+                                        sub_klasifikasi.id_sub,
+                                        sub_sub_klasifikasi.nama_subsub,
+                                        sub_sub_klasifikasi.id_subsub,
+                                        tingkat_perkembangan.nama_tingkat,  /* <--- TAMBAHAN 1: Ambil kolom nama */
+                                        peminjaman_arsip.id_peminjaman
+                                    FROM arsip_inaktif
+                                    LEFT JOIN kode_klasifikasi ON arsip_inaktif.id_kode = kode_klasifikasi.id_kode
+                                    LEFT JOIN sub_klasifikasi ON arsip_inaktif.id_sub = sub_klasifikasi.id_sub
+                                    LEFT JOIN sub_sub_klasifikasi ON arsip_inaktif.id_subsub = sub_sub_klasifikasi.id_subsub
+                                    LEFT JOIN tingkat_perkembangan ON arsip_inaktif.id_tingkat = tingkat_perkembangan.id_tingkat /* <--- TAMBAHAN 2: Sambungkan tabelnya */
+                                    LEFT JOIN peminjaman_arsip ON peminjaman_arsip.arsip_type = 'inaktif' 
+                                        AND peminjaman_arsip.arsip_id = arsip_inaktif.id_arsip_inaktif 
+                                        AND peminjaman_arsip.user_id = '$user_id'
+                                        AND peminjaman_arsip.status = 'aktif'
+                                        AND peminjaman_arsip.tanggal_expired > NOW()
+                                    $where
+                                    ORDER BY arsip_inaktif.id_arsip_inaktif DESC
+                                ";
+
+                    $query_arsip = mysqli_query($db, $query_string);
+                    if (!$query_arsip) {
+                        die("Query Error: " . mysqli_error($db));
+                    }
+                    ?>
 
                     <!-- TABLE -->
-
-                    <div class="table-responsive table-scroll">
+                    <div class="table-responsive">
                         <table class="table table-bordered table-hover align-middle">
                             <thead class="table-light text-center align-middle">
                                 <tr>
-                                    <th>No</th>
-                                    <th style="min-width: 150px;">Uraian Informasi</th>
-                                    <th style="min-width: 100px;">No Arsip/Berkas</th>
-                                    <th style="min-width: 150px;">Klasifikasi</th>
-                                    <th style="min-width: 130px;">Jenis/Series Arsip</th>
-                                    <th style="min-width: 100px;">Kurun Waktu</th>
-                                    <th style="min-width: 100px;">Retensi Arsip</th>
-                                    <th style="min-width: 150px;">Jumlah</th>
-                                    <th style="min-width: 150px;">Tingkat Perkembangan</th>
-                                    <th style="min-width: 150px;">Keterangan</th>
-                                    <th style="min-width: 130px;">Aksi</th>
+                                    <th class="col-no">No</th>
+                                    <th style="width: 200px;">Uraian Informasi Arsip</th>
+                                    <th style="width: 120px;">No Arsip/Berkas</th>
+                                    <th style="width: 150px;">Kode Klasifikasi</th>
+                                    <th style="width: 150px;">Jenis/Series Arsip</th>
+                                    <th style="width: 120px;">Tahun</th>
+                                    <th style="width: 120px;">Retensi</th>
+                                    <th style="width: 120px;">Jumlah</th>
+                                    <th style="width: 200px;">Tingkat Perkembangan</th>
+                                    <th style="width: 150px;">Keterangan</th>
+                                    <th style="width: 120px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php
-                                $no = 1;
-                                $where_conditions = [];
-
-                                // Filter by search
-                                if (isset($_GET['search']) && $_GET['search'] != '') {
-                                    $search = mysqli_real_escape_string($db, $_GET['search']);
-                                    $where_conditions[] = "(ap.uraian_informasi LIKE '%$search%' OR ap.nomor_arsip LIKE '%$search%' OR ap.lokasi_simpan LIKE '%$search%')";
-                                }
-
-                                $where = "";
-                                if (count($where_conditions) > 0) {
-                                    $where = "WHERE " . implode(" AND ", $where_conditions);
-                                }
-
-                                // Query for arsip_permanen with JOIN to kode_klasifikasi and peminjaman_arsip
-                                // $user_id = $_SESSION['id'];
-                                // Query for arsip_inaktif with JOIN
-                                $query = "SELECT ai.*, 
-                                             ai.id_kode,
-                                             ai.id_sub,
-                                             ai.id_subsub,
-                                             ai.kurun_waktu,
-                                             ai.jumlah,
-                                             ai.keterangan,
-                                             kk.kode_klasifikasi, 
-                                             kk.deskripsi as deskripsi_kode,
-                                             sk.nama_sub,
-                                             ssk.nama_subsub,
-                                             ja.nama_jenis,
-                                             tp.nama_tingkat,
-                                             u.nama_lengkap,
-                                             p.id_peminjaman,
-                                             p.tanggal_expired,
-                                             p.status as status_pinjam
-                                      FROM arsip_inaktif ai
-                                      LEFT JOIN kode_klasifikasi kk ON ai.id_kode = kk.id_kode
-                                      LEFT JOIN sub_klasifikasi sk ON ai.id_sub = sk.id_sub
-                                      LEFT JOIN sub_sub_klasifikasi ssk ON ai.id_subsub = ssk.id_subsub
-                                      LEFT JOIN jenis_arsip ja ON ai.id_jenis = ja.id_jenis
-                                      LEFT JOIN tingkat_perkembangan tp ON ai.id_tingkat = tp.id_tingkat
-                                      LEFT JOIN users u ON ai.user_id = u.id
-                                      LEFT JOIN peminjaman_arsip p ON p.arsip_type = 'inaktif' 
-                                            AND p.arsip_id = ai.id_arsip_inaktif 
-                                            AND p.user_id = '$user_id'
-                                            AND p.status = 'aktif'
-                                            AND p.tanggal_expired > NOW()
-                                      $where
-                                      ORDER BY ai.id_arsip_inaktif DESC";
-
-                                $arsip = mysqli_query($db, $query);
-
-                                if (mysqli_num_rows($arsip) > 0) {
-                                    while ($p = mysqli_fetch_array($arsip)) {
-                                        // Check if user has active borrowing
-                                        $has_borrowing = !empty($p['id_peminjaman']);
-                                        ?>
+                                <?php $no = 1;
+                                if (mysqli_num_rows($query_arsip) > 0) { ?>
+                                    <?php while ($data = mysqli_fetch_assoc($query_arsip)) { ?>
                                         <tr>
-                                            <td><?= $no++; ?></td>
+                                            <td class="text-center"><?= $no++ ?></td>
 
-                                            <td><?= htmlspecialchars($p['uraian_informasi']); ?></td>
+                                            <td><?= htmlspecialchars($data['uraian_arsip'] ?? '') ?></td>
 
-                                            <!-- KLASIFIKASI -->
-                                            <td>
-                                                <strong><?= htmlspecialchars($p['kode_klasifikasi'] ?? '-'); ?></strong><br>
-                                                <small class="text-muted">
-                                                    <?= htmlspecialchars($p['nama_sub'] ?? '-'); ?> /
-                                                    <?= htmlspecialchars($p['nama_subsub'] ?? '-'); ?>
-                                                </small>
+                                            <td class="text-center fw-bold"><?= htmlspecialchars($data['nomor_arsip'] ?? '') ?>
                                             </td>
 
-                                            <!-- JENIS ARSIP -->
                                             <td>
-                                                <?= htmlspecialchars($p['nama_jenis'] ?? 'Tidak diketahui'); ?>
+                                                <?php if (!empty($data['nama_subsub'])) { ?>
+                                                    <div class="fw-bold text-primary"><?= $data['id_subsub'] ?? '' ?></div>
+                                                    <div class="text-muted"><?= $data['nama_subsub'] ?? '' ?></div>
+                                                <?php } elseif (!empty($data['nama_sub'])) { ?>
+                                                    <div class="fw-bold text-primary"><?= $data['id_sub'] ?? '' ?></div>
+                                                    <div class="text-muted"><?= $data['nama_sub'] ?? '' ?></div>
+                                                <?php } else { ?>
+                                                    <div class="fw-bold text-primary"><?= $data['kode_klasifikasi'] ?? '' ?></div>
+                                                    <div class="text-muted"><?= $data['deskripsi'] ?? '' ?></div>
+                                                <?php } ?>
                                             </td>
 
-                                            <!-- TINGKAT PERKEMBANGAN -->
-                                            <td>
-                                                <?= htmlspecialchars($p['nama_tingkat'] ?? '-'); ?>
-                                            </td>
+                                            <td><?= htmlspecialchars($data['id_jenis'] ?? '') ?></td>
 
-                                            <!-- KURUN WAKTU -->
-                                            <td>
-                                                <?= htmlspecialchars($p['kurun_waktu'] ?? '-'); ?>
-                                            </td>
+                                            <td class="text-center"><?= htmlspecialchars($data['kurun_waktu'] ?? '') ?></td>
 
-                                            <!-- JUMLAH -->
+                                            <td class="text-center"><?= htmlspecialchars($data['retensi'] ?? '') ?></td>
+
+                                            <td class="text-center"><?= htmlspecialchars($data['jumlah'] ?? '') ?></td>
+
                                             <td class="text-center">
-                                                <?= htmlspecialchars($p['jumlah'] ?? '-'); ?>
-                                            </td>
-
-                                            <!-- KETERANGAN -->
-                                            <td>
-                                                <span class="badge rounded-pill bg-info-subtle text-info px-3 py-2">
-                                                    <?= htmlspecialchars($p['keterangan'] ?? '-'); ?>
+                                                <span class="badge rounded-pill bg-primary-subtle text-primary px-3 py-2 ">
+                                                    <?= htmlspecialchars($data['nama_tingkat'] ?? $data['id_tingkat'] ?? '-') ?>
                                                 </span>
                                             </td>
 
-                                            <!-- AKSI -->
+                                            <td><?= htmlspecialchars($data['keterangan'] ?? '') ?></td>
+
                                             <td class="text-center">
-                                                <?php if (!empty($p['id_peminjaman'])) { ?>
-                                                    <a href="akses_file.php?type=inaktif&id=<?= $p['id_arsip_inaktif']; ?>"
-                                                        class="btn btn-success btn-sm" target="_blank">
-                                                        Lihat
+                                                <?php if (!empty($data['id_peminjaman'])): ?>
+                                                    <a href="akses_file.php?type=inaktif&id=<?= $data['id_arsip_inaktif'] ?>"
+                                                        target="_blank" class="btn btn-success btn-sm">
+                                                        <i class="fas fa-file-pdf me-1"></i> Lihat
                                                     </a>
-                                                <?php } else { ?>
-                                                    <button class="btn btn-primary btn-sm" onclick="openBorrowModal(
-                                                        '<?= $p['id_arsip_inaktif']; ?>',
-                                                        'inaktif',
-                                                        '<?= addslashes($p['uraian_informasi']); ?>',
-                                                        '<?= addslashes($p['kode_klasifikasi']); ?>',
-                                                        '<?= $p['id_kode']; ?>',
-                                                        '<?= $p['id_sub'] ?? ''; ?>',
-                                                        '<?= $p['id_subsub'] ?? ''; ?>'
-                                                    )">
-                                                        Pinjam
+                                                <?php else: ?>
+                                                    <button type="button" onclick="openBorrowModal(
+                                                    '<?= $data['id_arsip_inaktif'] ?>',
+                                                    'inaktif',
+                                                    '<?= addslashes($data['uraian_informasi'] ?? '') ?>',
+                                                    '<?= addslashes($data['kode_klasifikasi'] ?? '') ?>',
+                                                    '<?= $data['id_kode'] ?? '' ?>',
+                                                    '<?= $data['id_sub'] ?? '' ?>',
+                                                    '<?= $data['id_subsub'] ?? '' ?>'
+                                                )" class="btn btn-primary btn-sm">
+                                                        <i class="fas fa-hand-holding mr-2"></i> Pinjam
                                                     </button>
-                                                <?php } ?>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
-
-                                        <?php
-                                    }
-                                } else {
-                                    ?>
+                                    <?php } ?>
+                                <?php } else { ?>
                                     <tr>
-                                        <td colspan="11"
+                                        <td colspan="9"
                                             class="px-4 py-8 border-b border-gray-200 bg-white text-center text-gray-500">
                                             <i class="fas fa-inbox text-4xl mb-3 text-gray-300"></i>
-                                            <p class="text-lg">Tidak ada data arsip inaktif</p>
+                                            <p class="text-lg">Tidak ada data arsip permanen</p>
                                             <?php if (isset($_GET['search']) && $_GET['search'] != '') { ?>
                                                 <p class="text-sm mt-2">Coba kata kunci pencarian yang berbeda</p>
                                             <?php } ?>
@@ -207,3 +220,6 @@ include 'header.php';
             </div>
 
             <?php include 'footer.php'; ?>
+
+        </div>
+    </main>

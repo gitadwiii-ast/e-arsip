@@ -1,3 +1,7 @@
+<?php
+// Set timezone agar jam otomatis sesuai WIB
+date_default_timezone_set('Asia/Jakarta');
+?>
 <!-- Modal Form Peminjaman Arsip (Bootstrap 5) -->
 <div class="modal fade" id="borrowModal" tabindex="-1" aria-labelledby="borrowModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -18,10 +22,12 @@
                     <!-- Baris 1: Tanggal & Periode -->
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Tanggal Peminjaman <span
-                                    class="text-danger">*</span></label>
-                            <input type="date" name="tanggal_pinjam" required class="form-control"
-                                value="<?php echo date('Y-m-d'); ?>">
+                            <label class="form-label fw-bold">Tanggal Peminjaman <span class="text-danger">*</span></label>
+                            <input type="datetime-local"
+                                   name="tanggal_pinjam"
+                                   required
+                                   class="form-control"
+                                   value="<?= date('Y-m-d\TH:i'); ?>">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Periode (Hari) <span class="text-danger">*</span></label>
@@ -57,7 +63,7 @@
                         </div>
                     </div>
 
-                    <!-- Accordion untuk Detail Klasifikasi (Cascading Dropdown) -->
+                    <!-- Accordion untuk Detail Klasifikasi -->
                     <div class="accordion mb-3" id="accordionKlasifikasi">
                         <div class="accordion-item">
                             <h2 class="accordion-header" id="headingOne">
@@ -70,7 +76,6 @@
                             <div id="collapseKlasifikasi" class="accordion-collapse collapse"
                                 aria-labelledby="headingOne" data-bs-parent="#accordionKlasifikasi">
                                 <div class="accordion-body">
-
                                     <!-- Klasifikasi Utama -->
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Klasifikasi Utama</label>
@@ -106,7 +111,6 @@
                                         </select>
                                         <input type="hidden" id="hidden_id_subsub">
                                     </div>
-
                                 </div>
                             </div>
                         </div>
@@ -144,7 +148,6 @@
                             </div>
                         </div>
                     </div>
-
                 </form>
             </div>
 
@@ -161,186 +164,158 @@
 </div>
 
 <script>
-    // Global variable for modal instance
-    let borrowModalInstance = null;
+let borrowModalInstance = null;
 
-    /**
-     * Membuka modal peminjaman dan mengisi data awal
-     */
-    function openBorrowModal(id, type, uraian, kode, id_kode, id_sub, id_subsub) {
-        // Set basic fields
-        document.getElementById('modal_arsip_id').value = id;
-        document.getElementById('modal_arsip_type').value = type;
-        document.getElementById('modal_uraian').value = uraian;
-        document.getElementById('display_kode_klasifikasi').value = kode;
-        document.getElementById('hidden_kode_klasifikasi').value = kode;
+function openBorrowModal(id, type, uraian, kode, id_kode, id_sub, id_subsub) {
+    document.getElementById('modal_arsip_id').value = id;
+    document.getElementById('modal_arsip_type').value = type;
+    document.getElementById('modal_uraian').value = uraian;
+    document.getElementById('display_kode_klasifikasi').value = kode;
+    document.getElementById('hidden_kode_klasifikasi').value = kode;
 
-        // Reset inputs
-        document.querySelector('input[name="no_box"]').value = '';
-        document.querySelector('input[name="pemilik_arsip"]').value = '';
-        document.querySelector('textarea[name="alasan_pinjam"]').value = '';
-        document.querySelector('input[name="nama_peminjam"]').value = '';
-        document.querySelector('input[name="instansi_peminjam"]').value = '';
+    document.querySelector('input[name="no_box"]').value = '';
+    document.querySelector('input[name="pemilik_arsip"]').value = '';
+    document.querySelector('textarea[name="alasan_pinjam"]').value = '';
+    document.querySelector('input[name="nama_peminjam"]').value = '';
+    document.querySelector('input[name="instansi_peminjam"]').value = '';
 
-        // Reset Dropdowns
-        document.getElementById('klasifikasi_select').value = id_kode;
-        document.getElementById('hidden_id_kode').value = id_kode;
+    document.getElementById('klasifikasi_select').value = id_kode;
+    document.getElementById('hidden_id_kode').value = id_kode;
 
-        // Reset Accordion state (close it)
-        const collapseEl = document.getElementById('collapseKlasifikasi');
-        if (collapseEl.classList.contains('show')) {
-            new bootstrap.Collapse(collapseEl, { toggle: false }).hide();
-        }
-
-        // Logic untuk mengisi Sub Klasifikasi jika ada
-        if (id_sub && id_sub !== 'undefined' && id_sub !== '') {
-            fetch(`pinjam-arsip.php?action=get_sub_klasifikasi&id_kode=${id_kode}`)
-                .then(response => response.json())
-                .then(data => {
-                    const subSelect = document.getElementById('sub_klasifikasi_select');
-                    subSelect.innerHTML = '<option value="">-- Pilih Sub Klasifikasi --</option>';
-                    data.forEach(item => {
-                        const option = document.createElement('option');
-                        option.value = item.id_sub;
-                        option.textContent = item.nama_sub;
-                        if (item.id_sub == id_sub) option.selected = true;
-                        subSelect.appendChild(option);
-                    });
-                    subSelect.disabled = false;
-                    subSelect.classList.remove('bg-light');
-                    document.getElementById('hidden_id_sub').value = id_sub;
-                });
-        } else {
-            document.getElementById('sub_klasifikasi_select').innerHTML = '<option value="">-- Pilih Sub Klasifikasi --</option>';
-            document.getElementById('sub_klasifikasi_select').disabled = true;
-        }
-
-        // Logic untuk mengisi Sub-Sub Klasifikasi jika ada
-        if (id_subsub && id_subsub !== 'undefined' && id_subsub !== '') {
-            fetch(`pinjam-arsip.php?action=get_sub_sub_klasifikasi&id_sub=${id_sub}`)
-                .then(response => response.json())
-                .then(data => {
-                    const subSubSelect = document.getElementById('sub_sub_klasifikasi_select');
-                    subSubSelect.innerHTML = '<option value="">-- Pilih Sub-Sub Klasifikasi --</option>';
-                    data.forEach(item => {
-                        const option = document.createElement('option');
-                        option.value = item.id_subsub;
-                        option.textContent = item.nama_subsub;
-                        if (item.id_subsub == id_subsub) option.selected = true;
-                        subSubSelect.appendChild(option);
-                    });
-                    subSubSelect.disabled = false;
-                    subSubSelect.classList.remove('bg-light');
-                    document.getElementById('hidden_id_subsub').value = id_subsub;
-                });
-        } else {
-            document.getElementById('sub_sub_klasifikasi_select').innerHTML = '<option value="">-- Pilih Sub-Sub Klasifikasi --</option>';
-            document.getElementById('sub_sub_klasifikasi_select').disabled = true;
-        }
-
-        // Show Modal using Bootstrap 5
-        if (!borrowModalInstance) {
-            borrowModalInstance = new bootstrap.Modal(document.getElementById('borrowModal'));
-        }
-        borrowModalInstance.show();
+    const collapseEl = document.getElementById('collapseKlasifikasi');
+    if (collapseEl.classList.contains('show')) {
+        new bootstrap.Collapse(collapseEl, { toggle: false }).hide();
     }
 
-    /**
-     * Logic Cascading Dropdown (Sama seperti sebelumnya tapi disesuaikan selectornya)
-     */
-
-    // Klasifikasi Change
-    document.getElementById('klasifikasi_select').addEventListener('change', function () {
-        const idKode = this.value;
-        const selectedOption = this.options[this.selectedIndex];
-        const kodeText = selectedOption.text.split(' - ')[0]; // Ambil kodenya saja
-
-        document.getElementById('hidden_id_kode').value = idKode;
-
-        // Update display
-        document.getElementById('display_kode_klasifikasi').value = kodeText;
-        document.getElementById('hidden_kode_klasifikasi').value = kodeText;
-
-        // Reset Sub & SubSub
-        const subSelect = document.getElementById('sub_klasifikasi_select');
-        subSelect.innerHTML = '<option value="">Loading...</option>';
-        subSelect.disabled = true;
-
-        const subSubSelect = document.getElementById('sub_sub_klasifikasi_select');
-        subSubSelect.innerHTML = '<option value="">-- Pilih Sub-Sub Klasifikasi --</option>';
-        subSubSelect.disabled = true;
-
-        if (idKode) {
-            fetch(`pinjam-arsip.php?action=get_sub_klasifikasi&id_kode=${idKode}`)
-                .then(res => res.json())
-                .then(data => {
-                    subSelect.innerHTML = '<option value="">-- Pilih Sub Klasifikasi --</option>';
-                    data.forEach(item => {
-                        const opt = document.createElement('option');
-                        opt.value = item.id_sub;
-                        opt.textContent = item.nama_sub;
-                        subSelect.appendChild(opt);
-                    });
-                    subSelect.disabled = false;
-                    subSelect.classList.remove('bg-light');
+    // Sub Klasifikasi
+    if (id_sub && id_sub !== 'undefined' && id_sub !== '') {
+        fetch(`pinjam-arsip.php?action=get_sub_klasifikasi&id_kode=${id_kode}`)
+            .then(r => r.json())
+            .then(data => {
+                const subSelect = document.getElementById('sub_klasifikasi_select');
+                subSelect.innerHTML = '<option value="">-- Pilih Sub Klasifikasi --</option>';
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id_sub;
+                    option.textContent = item.nama_sub;
+                    if (item.id_sub == id_sub) option.selected = true;
+                    subSelect.appendChild(option);
                 });
-        }
-    });
+                subSelect.disabled = false;
+                subSelect.classList.remove('bg-light');
+                document.getElementById('hidden_id_sub').value = id_sub;
+            });
+    } else {
+        document.getElementById('sub_klasifikasi_select').innerHTML = '<option value="">-- Pilih Sub Klasifikasi --</option>';
+        document.getElementById('sub_klasifikasi_select').disabled = true;
+    }
 
-    // Sub Klasifikasi Change
-    document.getElementById('sub_klasifikasi_select').addEventListener('change', function () {
-        const idSub = this.value;
-        const selectedOption = this.options[this.selectedIndex];
-        const namaSub = selectedOption.text;
-
-        document.getElementById('hidden_id_sub').value = idSub;
-
-        // Update display kode
-        let currentCode = document.getElementById('klasifikasi_select').options[document.getElementById('klasifikasi_select').selectedIndex].text.split(' - ')[0];
-        let fullCode = `${currentCode} > ${namaSub}`;
-        document.getElementById('display_kode_klasifikasi').value = fullCode;
-        document.getElementById('hidden_kode_klasifikasi').value = fullCode;
-
-        // Load SubSub
-        const subSubSelect = document.getElementById('sub_sub_klasifikasi_select');
-        subSubSelect.innerHTML = '<option value="">Loading...</option>';
-        subSubSelect.disabled = true;
-
-        if (idSub) {
-            fetch(`pinjam-arsip.php?action=get_sub_sub_klasifikasi&id_sub=${idSub}`)
-                .then(res => res.json())
-                .then(data => {
-                    subSubSelect.innerHTML = '<option value="">-- Pilih Sub-Sub Klasifikasi --</option>';
-                    data.forEach(item => {
-                        const opt = document.createElement('option');
-                        opt.value = item.id_subsub;
-                        opt.textContent = item.nama_subsub;
-                        subSubSelect.appendChild(opt);
-                    });
-                    subSubSelect.disabled = false;
-                    subSubSelect.classList.remove('bg-light');
+    // Sub-Sub Klasifikasi
+    if (id_subsub && id_subsub !== 'undefined' && id_subsub !== '') {
+        fetch(`pinjam-arsip.php?action=get_sub_sub_klasifikasi&id_sub=${id_sub}`)
+            .then(r => r.json())
+            .then(data => {
+                const subSubSelect = document.getElementById('sub_sub_klasifikasi_select');
+                subSubSelect.innerHTML = '<option value="">-- Pilih Sub-Sub Klasifikasi --</option>';
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id_subsub;
+                    option.textContent = item.nama_subsub;
+                    if (item.id_subsub == id_subsub) option.selected = true;
+                    subSubSelect.appendChild(option);
                 });
-        }
-    });
+                subSubSelect.disabled = false;
+                subSubSelect.classList.remove('bg-light');
+                document.getElementById('hidden_id_subsub').value = id_subsub;
+            });
+    } else {
+        document.getElementById('sub_sub_klasifikasi_select').innerHTML = '<option value="">-- Pilih Sub-Sub Klasifikasi --</option>';
+        document.getElementById('sub_sub_klasifikasi_select').disabled = true;
+    }
 
-    // Sub Sub Klasifikasi Change
-    document.getElementById('sub_sub_klasifikasi_select').addEventListener('change', function () {
-        const idSubSub = this.value;
-        const selectedOption = this.options[this.selectedIndex];
-        const namaSubSub = selectedOption.text;
+    if (!borrowModalInstance) {
+        borrowModalInstance = new bootstrap.Modal(document.getElementById('borrowModal'));
+    }
+    borrowModalInstance.show();
+}
 
-        document.getElementById('hidden_id_subsub').value = idSubSub;
+// Cascading dropdown logic sama seperti sebelumnya
+document.getElementById('klasifikasi_select').addEventListener('change', function () {
+    const idKode = this.value;
+    const selectedOption = this.options[this.selectedIndex];
+    const kodeText = selectedOption.text.split(' - ')[0];
 
-        // Update display kode
-        let klasifikasiSelect = document.getElementById('klasifikasi_select');
-        let currentCode = klasifikasiSelect.options[klasifikasiSelect.selectedIndex].text.split(' - ')[0];
+    document.getElementById('hidden_id_kode').value = idKode;
+    document.getElementById('display_kode_klasifikasi').value = kodeText;
+    document.getElementById('hidden_kode_klasifikasi').value = kodeText;
 
-        let subSelect = document.getElementById('sub_klasifikasi_select');
-        let namaSub = subSelect.options[subSelect.selectedIndex].text;
+    const subSelect = document.getElementById('sub_klasifikasi_select');
+    subSelect.innerHTML = '<option value="">Loading...</option>';
+    subSelect.disabled = true;
 
-        let fullCode = `${currentCode} > ${namaSub} > ${namaSubSub}`;
-        document.getElementById('display_kode_klasifikasi').value = fullCode;
-        document.getElementById('hidden_kode_klasifikasi').value = fullCode;
-    });
+    const subSubSelect = document.getElementById('sub_sub_klasifikasi_select');
+    subSubSelect.innerHTML = '<option value="">-- Pilih Sub-Sub Klasifikasi --</option>';
+    subSubSelect.disabled = true;
 
+    if (idKode) {
+        fetch(`pinjam-arsip.php?action=get_sub_klasifikasi&id_kode=${idKode}`)
+            .then(res => res.json())
+            .then(data => {
+                subSelect.innerHTML = '<option value="">-- Pilih Sub Klasifikasi --</option>';
+                data.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id_sub;
+                    opt.textContent = item.nama_sub;
+                    subSelect.appendChild(opt);
+                });
+                subSelect.disabled = false;
+                subSelect.classList.remove('bg-light');
+            });
+    }
+});
+
+document.getElementById('sub_klasifikasi_select').addEventListener('change', function () {
+    const idSub = this.value;
+    const namaSub = this.options[this.selectedIndex].text;
+    document.getElementById('hidden_id_sub').value = idSub;
+
+    const currentCode = document.getElementById('klasifikasi_select').options[document.getElementById('klasifikasi_select').selectedIndex].text.split(' - ')[0];
+    const fullCode = `${currentCode} > ${namaSub}`;
+    document.getElementById('display_kode_klasifikasi').value = fullCode;
+    document.getElementById('hidden_kode_klasifikasi').value = fullCode;
+
+    const subSubSelect = document.getElementById('sub_sub_klasifikasi_select');
+    subSubSelect.innerHTML = '<option value="">Loading...</option>';
+    subSubSelect.disabled = true;
+
+    if (idSub) {
+        fetch(`pinjam-arsip.php?action=get_sub_sub_klasifikasi&id_sub=${idSub}`)
+            .then(res => res.json())
+            .then(data => {
+                subSubSelect.innerHTML = '<option value="">-- Pilih Sub-Sub Klasifikasi --</option>';
+                data.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id_subsub;
+                    opt.textContent = item.nama_subsub;
+                    subSubSelect.appendChild(opt);
+                });
+                subSubSelect.disabled = false;
+                subSubSelect.classList.remove('bg-light');
+            });
+    }
+});
+
+document.getElementById('sub_sub_klasifikasi_select').addEventListener('change', function () {
+    const idSubSub = this.value;
+    const namaSubSub = this.options[this.selectedIndex].text;
+    document.getElementById('hidden_id_subsub').value = idSubSub;
+
+    const klasifikasiSelect = document.getElementById('klasifikasi_select');
+    const currentCode = klasifikasiSelect.options[klasifikasiSelect.selectedIndex].text.split(' - ')[0];
+    const subSelect = document.getElementById('sub_klasifikasi_select');
+    const namaSub = subSelect.options[subSelect.selectedIndex].text;
+    const fullCode = `${currentCode} > ${namaSub} > ${namaSubSub}`;
+    document.getElementById('display_kode_klasifikasi').value = fullCode;
+    document.getElementById('hidden_kode_klasifikasi').value = fullCode;
+});
 </script>

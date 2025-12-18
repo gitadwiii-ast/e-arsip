@@ -8,20 +8,69 @@ if (!isset($_SESSION['id'])) {
     exit();
 }
 
-// 1. QUERY JUMLAH ARSIP
+// 1. Ambil ID User dari Session
+$user_id = $_SESSION['id'];
+
+// 2. QUERY JUMLAH ARSIP
 $count_vital = mysqli_num_rows(mysqli_query($db, "SELECT id_arsip_vital FROM arsip_vital"));
 $count_permanen = mysqli_num_rows(mysqli_query($db, "SELECT id_arsip_permanen FROM arsip_permanen"));
 $count_aktif = mysqli_num_rows(mysqli_query($db, "SELECT id_arsip_aktif FROM arsip_aktif"));
 $count_inaktif = mysqli_num_rows(mysqli_query($db, "SELECT id_arsip_inaktif FROM arsip_inaktif"));
 
-// 2. QUERY DAFTAR PEMINJAMAN YANG SEDANG AKTIF
+// 3. QUERY DAFTAR PEMINJAMAN YANG SEDANG AKTIF (Hanya milik user login)
 $query_pinjam = "SELECT * FROM peminjaman_arsip 
-                 WHERE status = 'aktif' AND tanggal_expired > NOW()
+                 WHERE user_id = '$user_id' 
+                 AND status = 'aktif' 
+                 AND tanggal_expired > NOW()
                  ORDER BY id_peminjaman DESC";
 $result_pinjam = mysqli_query($db, $query_pinjam);
 
 include 'header.php';
+
+
 ?>
+
+<style>
+    /* Container tabel */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Jangan paksa tabel mengecil */
+    table {
+        min-width: 1000px;
+        /* bebas, bisa 900–1200 */
+    }
+
+    /* Umum */
+    th,
+    td {
+        vertical-align: middle;
+        word-wrap: break-word;
+        font-size: 14px;
+    }
+
+    /* Kolom khusus */
+    .col-no {
+        width: 45px;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .col-nomor {
+        width: 140px;
+        font-family: monospace;
+        white-space: nowrap;
+    }
+
+    .col-aksi {
+        width: 120px;
+        text-align: center;
+        white-space: nowrap;
+    }
+</style>
+
 
 <div class="d-flex">
 
@@ -48,6 +97,27 @@ include 'header.php';
                     <div class="small">Anda login sebagai <?= ucfirst($_SESSION['role']); ?></div>
                 </div>
             </div>
+
+            <!-- ALERT NOTIFIKASI -->
+            <?php if (isset($_GET['alert'])): ?>
+                <?php if ($_GET['alert'] == 'pinjam_berhasil'): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i> Peminjaman berhasil! Data telah ditambahkan ke tabel
+                        peminjaman.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php elseif ($_GET['alert'] == 'sudah_dipinjam'): ?>
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i> Arsip ini sedang Anda pinjam.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php elseif ($_GET['alert'] == 'error'): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan saat memproses peminjaman.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
 
             <!-- CARDS ROW -->
             <div class="row g-4 mb-4">
@@ -143,16 +213,18 @@ include 'header.php';
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle" width="100%" cellspacing="0">
+                        <table class="table table-bordered table-hover align-middle text-center" width="100%"
+                            cellspacing="0">
                             <thead class="table-light">
                                 <tr>
                                     <th width="5%">No</th>
                                     <th>Peminjam</th>
                                     <th>Arsip</th>
-                                    <th>Uraian Informasi</th>
+                                    <th style="width: 250px;">Uraian Informasi</th>
                                     <th>Tgl Pinjam</th>
                                     <th>Jatuh Tempo</th>
                                     <th>Sisa Waktu</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -171,6 +243,30 @@ include 'header.php';
                                             $sisa_waktu = "<span class='badge bg-danger'>Expired</span>";
                                         } else {
                                             $sisa_waktu = "<span class='badge bg-success'>" . $interval->days . " Hari " . $interval->h . " Jam</span>";
+                                        }
+                                        ?>
+
+                                        <!-- Ambil nama file asli dari tabel sumber -->
+                                        <?php
+                                        $arsip_id = $row['arsip_id'];
+                                        $arsip_type = $row['arsip_type'];
+                                        $file_pdf = "";
+
+                                        // Map tabel dan field primary key
+                                        $table_map = [
+                                            'vital' => ['table' => 'arsip_vital', 'pk' => 'id_arsip_vital'],
+                                            'permanen' => ['table' => 'arsip_permanen', 'pk' => 'id_arsip_permanen'],
+                                            'aktif' => ['table' => 'arsip_aktif', 'pk' => 'id_arsip_aktif'],
+                                            'inaktif' => ['table' => 'arsip_inaktif', 'pk' => 'id_arsip_inaktif']
+                                        ];
+
+                                        if (isset($table_map[$arsip_type])) {
+                                            $t_info = $table_map[$arsip_type];
+                                            $f_query = "SELECT file_pdf FROM {$t_info['table']} WHERE {$t_info['pk']} = '$arsip_id' LIMIT 1";
+                                            $f_res = mysqli_query($db, $f_query);
+                                            if ($f_res && $f_data = mysqli_fetch_assoc($f_res)) {
+                                                $file_pdf = $f_data['file_pdf'];
+                                            }
                                         }
                                         ?>
 
@@ -195,11 +291,21 @@ include 'header.php';
                                             <td class="text-center">
                                                 <?= $sisa_waktu; ?>
                                             </td>
+                                            <td class="text-center">
+                                                <?php if (!empty($file_pdf)): ?>
+                                                    <a href="upload/<?= htmlspecialchars($file_pdf); ?>" target="_blank"
+                                                        class="btn btn-success btn-sm">
+                                                        <i class="bi bi-file-earmark-pdf"></i> Lihat
+                                                    </a>
+                                                <?php else: ?>
+                                                    <span class="text-muted small">-</span>
+                                                <?php endif; ?>
+                                            </td>
                                         </tr>
                                     <?php endwhile; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="7" class="text-center py-4 text-muted">
+                                        <td colspan="8" class="text-center py-4 text-muted">
                                             <i class="fas fa-folder-open fa-2x mb-3"></i><br>
                                             Tidak ada peminjaman yang sedang aktif
                                         </td>

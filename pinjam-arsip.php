@@ -140,7 +140,7 @@ $insert_query = "INSERT INTO peminjaman_arsip
 // Kembali ke halaman arsip dengan alert sukses atau error
 if (mysqli_query($db, $insert_query)) {
     // Berhasil menyimpan peminjaman
-    header("location:arsip_$arsip_type.php?alert=pinjam_berhasil");
+    header("location:dashboard.php?alert=pinjam_berhasil");
 } else {
     // Gagal menyimpan (error database)
     header("location:arsip_$arsip_type.php?alert=error");

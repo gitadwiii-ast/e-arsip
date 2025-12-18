@@ -5,7 +5,46 @@ $user_id = $_SESSION['id'] ?? null;
 include 'header.php';
 ?>
 
+<style>
+    /* Container tabel */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 
+    /* Jangan paksa tabel mengecil */
+    table {
+        min-width: 1000px;
+        /* bebas, bisa 900–1200 */
+    }
+
+    /* Umum */
+    th,
+    td {
+        vertical-align: middle;
+        word-wrap: break-word;
+        font-size: 14px;
+    }
+
+    /* Kolom khusus */
+    .col-no {
+        width: 45px;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .col-nomor {
+        width: 140px;
+        font-family: monospace;
+        white-space: nowrap;
+    }
+
+    .col-aksi {
+        width: 120px;
+        text-align: center;
+        white-space: nowrap;
+    }
+</style>
 
 
 <div class="d-flex">
@@ -17,7 +56,8 @@ include 'header.php';
             <div class="card shadow-lg rounded-3 overflow-hidden">
 
                 <!-- HEADER -->
-                <div class="card-header text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(90deg,#4f46e5,#4338ca);">
+                <div class="card-header text-white d-flex justify-content-between align-items-center"
+                    style="background: linear-gradient(90deg,#4f46e5,#4338ca);">
                     <h5 class="mb-0 fw-bold">
                         <i class="fas fa-archive me-2"></i> Data Arsip Aktif
                     </h5>
@@ -81,15 +121,15 @@ include 'header.php';
 
                             <thead class="table-light text-center align-middle">
                                 <tr>
-                                    <th>No</th>
-                                    <th style="min-width: 250px;">Uraian Informasi</th>
-                                    <th style="min-width: 200px;">Uraian Info Berkas</th>
-                                    <th style="min-width: 150px;">Klasifikasi</th>
-                                    <th style="min-width: 120px;">Nomor Berkas</th>
-                                    <th style="min-width: 80px;">Jumlah</th>
-                                    <th style="min-width: 100px;">Kurun Waktu</th>
-                                    <th style="min-width: 120px;">Keamanan</th>
-                                    <th class="col-action" style="min-width: 100px;">Aksi</th>
+                                    <th class="col-no">No</th>
+                                    <th style="width: 250px;">Uraian Informasi</th>
+                                    <th style="width: 200px;">Uraian Info Berkas</th>
+                                    <th style="width: 150px;">Klasifikasi</th>
+                                    <th style="width: 120px;">Nomor Berkas</th>
+                                    <th style="width: 80px;">Jumlah</th>
+                                    <th style="width: 100px;">Kurun Waktu</th>
+                                    <th style="width: 120px;">Keamanan</th>
+                                    <th class="col-action" style="width: 100px;">Aksi</th>
                                 </tr>
                             </thead>
 
@@ -126,12 +166,12 @@ include 'header.php';
                                                 </small>
                                             </td>
 
-                                            <td class="font-monospace">
+                                            <td class="font-monospace text-center">
                                                 <?= htmlspecialchars($p['no_berkas'] ?? '-'); ?>
                                             </td>
 
                                             <td class="text-center">
-                                                <?= htmlspecialchars($p['jumlah'] ?? '0'); ?>
+                                                <?= htmlspecialchars($p['jumlah'] ?? '0'); ?> berkas
                                             </td>
 
                                             <td class="text-center">
@@ -145,31 +185,37 @@ include 'header.php';
                                             </td>
 
                                             <td class="text-center">
-                                                <?php if ($has_borrowing): ?>
-                                                    <a href="akses_file.php?type=aktif&id=<?= $p['id_arsip_aktif']; ?>"
-                                                        target="_blank" class="btn btn-success btn-sm">
-                                                        <i class="bi bi-file-earmark-pdf"></i> Lihat
+                                                <?php if (!empty($p['id_peminjaman'])) { ?>
+                                                    <a href="akses_file.php?type=permanen&id=<?= $p['id_arsip_aktif']; ?>"
+                                                        class="btn btn-success btn-sm" target="_blank">
+                                                        Lihat
                                                     </a>
-                                                <?php else: ?>
+                                                <?php } else { ?>
                                                     <button class="btn btn-primary btn-sm" onclick="openBorrowModal(
-                                                        <?= $p['id_arsip_aktif']; ?>,
+                                                        '<?= $p['id_arsip_aktif']; ?>',
                                                         'aktif',
                                                         '<?= addslashes($p['uraian_informasi']); ?>',
                                                         '<?= addslashes($p['kode_klasifikasi']); ?>',
                                                         '<?= $p['id_kode']; ?>',
                                                         '<?= $p['id_sub'] ?? ''; ?>',
                                                         '<?= $p['id_subsub'] ?? ''; ?>'
-                                                    )">
-                                                        <i class="bi bi-hand-index-thumb"></i> Pinjam
+                                                    )"><i class="fas fa-hand-holding mr-2"></i>
+                                                        Pinjam
                                                     </button>
-                                                <?php endif; ?>
+                                                <?php } ?>
                                             </td>
+
                                         </tr>
                                     <?php endwhile; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted py-4">
-                                            Tidak ada data arsip aktif
+                                        <td colspan="9"
+                                            class="px-4 py-8 border-b border-gray-200 bg-white text-center text-gray-500">
+                                            <i class="fas fa-inbox text-4xl mb-3 text-gray-300"></i>
+                                            <p class="text-lg">Tidak ada data arsip permanen</p>
+                                            <?php if (isset($_GET['search']) && $_GET['search'] != '') { ?>
+                                                <p class="text-sm mt-2">Coba kata kunci pencarian yang berbeda</p>
+                                            <?php } ?>
                                         </td>
                                     </tr>
                                 <?php endif; ?>

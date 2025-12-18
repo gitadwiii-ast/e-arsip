@@ -207,7 +207,7 @@ $arsip_active = (
 
         <hr>
 
-        <a href="auth.php?logout=true" class="menu-item menu-logout">
+        <a href="/peminjaman-arsip/index.php?logout=true" class="menu-item menu-logout">
             <div class="d-flex align-items-center">
                 <i class="fas fa-sign-out-alt icon-start"></i> Logout
             </div>

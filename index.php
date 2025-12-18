@@ -7,6 +7,7 @@ if (!isset($_SESSION['captcha'])) {
 }
 ?>
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
