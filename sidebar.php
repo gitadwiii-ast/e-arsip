@@ -15,7 +15,8 @@ $arsip_active = (
     strpos($current_file, 'arsip-vital') !== false ||
     strpos($current_file, 'arsip-permanen') !== false ||
     strpos($current_file, 'arsip-aktif') !== false ||
-    strpos($current_file, 'arsip-inaktif') !== false
+    strpos($current_file, 'arsip-inaktif') !== false ||
+    strpos($current_file, 'arsip-fisik') !== false
 );
 // Pengawasan removed as it's not in function
 $rekap_active = (strpos($current_file, 'rekap') !== false);
@@ -200,21 +201,25 @@ $rekap_active = (strpos($current_file, 'rekap') !== false);
 
     @media (max-width: 767.98px) {
 
-    .sidebar {
-        position: fixed;       /* jadi floating */
-        top: 0;
-        left: -100%;           /* DISIMPAN ke kiri */
-        width: 80%;            /* lebar menu mobile */
-        max-width: 300px;
-        height: 100vh;
-        z-index: 1050;
-        transition: left 0.3s ease-in-out;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-    }
+        .sidebar {
+            position: fixed;
+            /* jadi floating */
+            top: 0;
+            left: -100%;
+            /* DISIMPAN ke kiri */
+            width: 80%;
+            /* lebar menu mobile */
+            max-width: 300px;
+            height: 100vh;
+            z-index: 1050;
+            transition: left 0.3s ease-in-out;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        }
 
-    .sidebar.show {
-        left: 0;               /* MUNCUL saat hamburger diklik */
-    }
+        .sidebar.show {
+            left: 0;
+            /* MUNCUL saat hamburger diklik */
+        }
     }
 </style>
 
@@ -260,6 +265,9 @@ $rekap_active = (strpos($current_file, 'rekap') !== false);
             </a>
             <a href="<?= $base_url ?>/arsip-inaktif.php" class="menu-item <?= $active('arsip-inaktif') ?>">
                 <span class="menu-text">Arsip Inaktif</span>
+            </a>
+            <a href="<?= $base_url ?>/arsip-fisik.php" class="menu-item <?= $active('arsip-fisik') ?>">
+                <span class="menu-text">Arsip Fisik</span>
             </a>
         </div>
 

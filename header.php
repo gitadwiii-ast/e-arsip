@@ -7,6 +7,7 @@ $halaman_arsip = [
     'arsip-inaktif.php',
     'arsip-permanen.php',
     'arsip-vital.php',
+    'arsip-fisik.php',
     'rekap.php'
 ];
 $tampil_search = in_array($file_sekarang, $halaman_arsip);
@@ -21,6 +22,8 @@ elseif ($file_sekarang == 'arsip-vital.php')
     $kategori_aktif = 'vital';
 elseif ($file_sekarang == 'arsip-permanen.php')
     $kategori_aktif = 'permanen';
+elseif ($file_sekarang == 'arsip-fisik.php')
+    $kategori_aktif = 'fisik';
 
 $current_search = htmlspecialchars($_GET['search'] ?? '');
 ?>
@@ -28,6 +31,7 @@ $current_search = htmlspecialchars($_GET['search'] ?? '');
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -45,15 +49,32 @@ $current_search = htmlspecialchars($_GET['search'] ?? '');
             word-wrap: break-word;
             vertical-align: middle;
         }
+
         table {
             width: 100%;
             table-layout: fixed;
         }
-        .bg-gradient-primary { background: linear-gradient(45deg, #4e73df, #224abe); }
-        .bg-gradient-success { background: linear-gradient(45deg, #1cc88a, #13855c); }
-        .bg-gradient-info    { background: linear-gradient(45deg, #36b9cc, #258391); }
-        .bg-gradient-warning { background: linear-gradient(45deg, #f6c23e, #dda20a); }
-        .bg-gradient-danger  { background: linear-gradient(45deg, #e74a3b, #be2617); }
+
+        .bg-gradient-primary {
+            background: linear-gradient(45deg, #4e73df, #224abe);
+        }
+
+        .bg-gradient-success {
+            background: linear-gradient(45deg, #1cc88a, #13855c);
+        }
+
+        .bg-gradient-info {
+            background: linear-gradient(45deg, #36b9cc, #258391);
+        }
+
+        .bg-gradient-warning {
+            background: linear-gradient(45deg, #f6c23e, #dda20a);
+        }
+
+        .bg-gradient-danger {
+            background: linear-gradient(45deg, #e74a3b, #be2617);
+        }
+
         .search-group {
             background-color: #f3f4f6;
             /* Abu-abu muda */
@@ -116,7 +137,8 @@ $current_search = htmlspecialchars($_GET['search'] ?? '');
         }
     </style>
 </head>
-<body class="bg-light"> 
+
+<body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-white sticky-top shadow-sm">
         <div class="container-fluid">
 
@@ -156,6 +178,10 @@ $current_search = htmlspecialchars($_GET['search'] ?? '');
 
                             <?php if ($kategori_aktif !== 'permanen'): ?>
                                 <option value="permanen">Arsip Permanen</option>
+                            <?php endif; ?>
+
+                            <?php if ($kategori_aktif !== 'fisik'): ?>
+                                <option value="fisik">Arsip Fisik</option>
                             <?php endif; ?>
                         </select>
 
@@ -229,6 +255,7 @@ $current_search = htmlspecialchars($_GET['search'] ?? '');
                             case 'inaktif': targetURL = baseURL + "/arsip-inaktif.php"; break;
                             case 'vital': targetURL = baseURL + "/arsip-vital.php"; break;
                             case 'permanen': targetURL = baseURL + "/arsip-permanen.php"; break;
+                            case 'fisik': targetURL = baseURL + "/arsip-fisik.php"; break;
                             case 'semua':
                                 // Asumsi ada halaman dashboard atau pencarian global
                                 targetURL = "/peminjaman-arsip/dashboard.php";
