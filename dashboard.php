@@ -11,6 +11,9 @@ if (!isset($_SESSION['id'])) {
 // 1. Ambil ID User dari Session
 $user_id = $_SESSION['id'];
 
+// SET TIMEZONE
+date_default_timezone_set('Asia/Jakarta');
+
 // 2. QUERY JUMLAH ARSIP
 $count_vital = mysqli_num_rows(mysqli_query($db, "SELECT id_arsip_vital FROM arsip_vital"));
 $count_permanen = mysqli_num_rows(mysqli_query($db, "SELECT id_arsip_permanen FROM arsip_permanen"));
@@ -131,7 +134,7 @@ include 'header.php';
                                     <div class="text-xs fw-bold text-uppercase mb-1">Arsip Vital</div>
                                     <div class="h2 mb-0 fw-bold"><?= $count_vital; ?></div>
                                 </div>
-                                <i class="fas fa-heartbeat fa-3x text-white-50"></i>
+                                <!-- <i class="fas fa-heartbeat fa-3x text-white-50"></i> -->
                             </div>
                         </div>
                         <a href="arsip-vital.php" class="card-footer text-white clearfix small z-1"
@@ -151,7 +154,7 @@ include 'header.php';
                                     <div class="text-xs fw-bold text-uppercase mb-1">Arsip Permanen</div>
                                     <div class="h2 mb-0 fw-bold"><?= $count_permanen; ?></div>
                                 </div>
-                                <i class="fas fa-archive fa-3x text-white-50"></i>
+                                <!-- <i class="fas fa-archive fa-3x text-white-50"></i> -->
                             </div>
                         </div>
                         <a href="arsip-permanen.php" class="card-footer text-white clearfix small z-1"
@@ -171,7 +174,7 @@ include 'header.php';
                                     <div class="text-xs fw-bold text-uppercase mb-1">Arsip Aktif</div>
                                     <div class="h2 mb-0 fw-bold"><?= $count_aktif; ?></div>
                                 </div>
-                                <i class="fas fa-check-circle fa-3x text-white-50"></i>
+                                <!-- <i class="fas fa-check-circle fa-3x text-white-50"></i> -->
                             </div>
                         </div>
                         <a href="arsip-aktif.php" class="card-footer text-white clearfix small z-1"
@@ -191,7 +194,7 @@ include 'header.php';
                                     <div class="text-xs fw-bold text-uppercase mb-1">Arsip Inaktif</div>
                                     <div class="h2 mb-0 fw-bold"><?= $count_inaktif; ?></div>
                                 </div>
-                                <i class="fas fa-box-open fa-3x text-white-50"></i>
+                                <!-- <i class="fas fa-box-open fa-3x text-white-50"></i> -->
                             </div>
                         </div>
                         <a href="arsip-inaktif.php" class="card-footer text-white clearfix small z-1"
@@ -240,7 +243,7 @@ include 'header.php';
 
                                         // Format sisa waktu
                                         if ($now > $expired) {
-                                            $sisa_waktu = "<span class='badge bg-danger'>Expired</span>";
+                                            $sisa_waktu = "<span class='badge bg-danger'>Jatuh Tempo</span>";
                                         } else {
                                             $sisa_waktu = "<span class='badge bg-success'>" . $interval->days . " Hari " . $interval->h . " Jam</span>";
                                         }
@@ -292,13 +295,21 @@ include 'header.php';
                                                 <?= $sisa_waktu; ?>
                                             </td>
                                             <td class="text-center">
-                                                <?php if (!empty($file_pdf)): ?>
-                                                    <a href="upload/<?= htmlspecialchars($file_pdf); ?>" target="_blank"
-                                                        class="btn btn-success btn-sm">
-                                                        <i class="bi bi-file-earmark-pdf"></i> Lihat
-                                                    </a>
+                                                <?php if ($now > $expired): ?>
+                                                    <!-- JIKA TELAT: Tombol Mati -->
+                                                    <button class="btn btn-secondary btn-sm" disabled title="Masa peminjaman habis">
+                                                        <i class="fas fa-ban"></i> Terkunci
+                                                    </button>
                                                 <?php else: ?>
-                                                    <span class="text-muted small">-</span>
+                                                    <!-- JIKA AMAN: Tombol Lihat Aktif -->
+                                                    <?php if (!empty($file_pdf)): ?>
+                                                        <a href="upload/<?= htmlspecialchars($file_pdf); ?>" target="_blank"
+                                                            class="btn btn-success btn-sm">
+                                                            <i class="bi bi-file-earmark-pdf"></i> Lihat
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <span class="text-muted small">-</span>
+                                                    <?php endif; ?>
                                                 <?php endif; ?>
                                             </td>
                                         </tr>

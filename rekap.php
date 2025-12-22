@@ -9,6 +9,7 @@ if (!isset($_SESSION['id'])) {
 }
 
 $user_id = $_SESSION['id'];
+date_default_timezone_set('Asia/Jakarta');
 
 // 1. QUERY JUMLAH ARSIP UNTUK STATISTIK
 $count_vital = mysqli_num_rows(mysqli_query($db, "SELECT id_arsip_vital FROM arsip_vital"));
@@ -20,8 +21,86 @@ $count_inaktif = mysqli_num_rows(mysqli_query($db, "SELECT id_arsip_inaktif FROM
 $query_rekap = "SELECT * FROM peminjaman_arsip ORDER BY id_peminjaman DESC";
 $result_rekap = mysqli_query($db, $query_rekap);
 
+// HANDLE EXPORT EXCEL
+if (isset($_GET['action']) && $_GET['action'] == 'export_excel') {
+    // Note: Content-Type application/vnd-ms-excel with HTML content works best with .xls extension.
+    // .xlsx requires actual ZIP-XML format which we are not generating here.
+    header("Content-type: application/vnd-ms-excel");
+    header("Content-Disposition: attachment; filename=Rekap_Peminjaman_" . date('Y-m-d') . ".xls");
+    ?>
+    <html>
+
+    <body>
+        <center>
+            <h3>REKAPITULASI PEMINJAMAN ARSIP</h3>
+            <p>Dicetak pada: <?= date("d/m/Y H:i:s") ?></p>
+        </center>
+        <table border="1">
+            <thead>
+                <tr style="background-color: #f2f2f2;">
+                    <th>No</th>
+                    <th>Peminjam</th>
+                    <th>Instansi</th>
+                    <th>Tipe Arsip</th>
+                    <th>Uraian Arsip</th>
+                    <th>Tanggal Pinjam</th>
+                    <th>Jatuh Tempo</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $no = 1;
+                if (mysqli_num_rows($result_rekap) > 0) {
+                    // Reset pointer result_rekap karena sudah dipakai di bawah (tapi ini page load baru, jadi aman)
+                    // Tapi karena ini di atas include header, variabel $result_rekap sudah ada.
+                    while ($row = mysqli_fetch_assoc($result_rekap)) {
+                        $expired = strtotime($row['tanggal_expired']) < time();
+
+                        $status_style = "";
+                        $date_style = "";
+
+                        if ($row['status'] == 'selesai') {
+                            $status_text = 'Kembali';
+                            $status_style = 'background-color: #6c757d; color: white; text-align: center;';
+                        } elseif ($expired) {
+                            $status_text = 'Jatuh Tempo';
+                            $status_style = 'background-color: #dc3545; color: white; text-align: center;';
+                            $date_style = 'color: #dc3545; font-weight: bold;';
+                        } else {
+                            $status_text = 'Dipinjam';
+                            $status_style = 'background-color: #198754; color: white; text-align: center;';
+                        }
+                        ?>
+                        <tr>
+                            <td style="text-align: center;"><?= $no++ ?></td>
+                            <td><?= htmlspecialchars($row['nama_peminjam']) ?></td>
+                            <td><?= htmlspecialchars($row['instansi_peminjam']) ?></td>
+                            <td><?= strtoupper($row['arsip_type']) ?></td>
+                            <td><?= htmlspecialchars($row['uraian_informasi']) ?></td>
+                            <td><?= date('d/m/Y H:i', strtotime($row['tanggal_pinjam'])) ?></td>
+                            <td style="<?= $date_style ?>"><?= date('d/m/Y H:i', strtotime($row['tanggal_expired'])) ?></td>
+                            <td style="<?= $status_style ?>"><?= $status_text ?></td>
+                        </tr>
+                        <?php
+                    }
+                } else {
+                    echo '<tr><td colspan="8" align="center">Belum ada riwayat peminjaman.</td></tr>';
+                }
+                ?>
+            </tbody>
+        </table>
+    </body>
+
+    </html>
+    <?php
+    exit(); // Stop execution to prevent HTML rendering
+}
+
 include 'header.php';
 ?>
+
+
 
 <div class="d-flex">
     <?php include 'sidebar.php'; ?>
@@ -34,9 +113,17 @@ include 'header.php';
                 <h4 class="fw-bold text-dark mb-0">
                     <i class="fas fa-file-invoice me-2"></i> Rekapitulasi Peminjaman
                 </h4>
-                <button onclick="window.print()" class="btn btn-dark shadow-sm d-print-none">
-                    <i class="fas fa-print me-1"></i> Cetak Laporan
-                </button>
+                <div class="d-print-none">
+                    <a href="rekap.php?action=export_excel" target="_blank" class="btn btn-success shadow-sm me-2">
+                        <i class="fas fa-file-excel me-1"></i> Excel
+                    </a>
+                    <button onclick="downloadPDF()" class="btn btn-danger shadow-sm me-2">
+                        <i class="fas fa-file-pdf me-1"></i> PDF
+                    </button>
+                    <button onclick="window.print()" class="btn btn-dark shadow-sm">
+                        <i class="fas fa-print me-1"></i> Cetak
+                    </button>
+                </div>
             </div>
 
             <!-- STATISTIC CARDS -->
@@ -76,7 +163,7 @@ include 'header.php';
             </div>
 
             <!-- TABLE REKAP -->
-            <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+            <div id="rekapTable" class="card shadow-sm border-0 rounded-3 overflow-hidden">
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
@@ -97,8 +184,17 @@ include 'header.php';
                                 if (mysqli_num_rows($result_rekap) > 0):
                                     while ($row = mysqli_fetch_assoc($result_rekap)):
                                         $expired = strtotime($row['tanggal_expired']) < time();
-                                        $status_text = ($row['status'] == 'aktif' && !$expired) ? 'Aktif' : 'Selesai';
-                                        $status_class = ($row['status'] == 'aktif' && !$expired) ? 'bg-success' : 'bg-secondary';
+
+                                        if ($row['status'] == 'selesai') {
+                                            $status_text = 'Kembali';
+                                            $status_class = 'bg-secondary';
+                                        } elseif ($expired) {
+                                            $status_text = 'Jatuh Tempo';
+                                            $status_class = 'bg-danger';
+                                        } else {
+                                            $status_text = 'Dipinjam';
+                                            $status_class = 'bg-success';
+                                        }
                                         ?>
                                         <tr>
                                             <td class="px-4 text-center text-muted"><?= $no++ ?></td>
@@ -129,7 +225,7 @@ include 'header.php';
                                                 </span>
                                             </td>
                                         </tr>
-                                    <?php
+                                        <?php
                                     endwhile;
                                 else:
                                     ?>
@@ -179,5 +275,33 @@ include 'header.php';
         }
     }
 </style>
+
+<!-- Libs for PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+    function downloadPDF() {
+        const element = document.getElementById('rekapTable'); // Target the specific table card
+        const opt = {
+            margin: 1,
+            filename: 'Rekap_Peminjaman_' + new Date().toISOString().slice(0, 10) + '.pdf',
+            image: {
+                type: 'jpeg',
+                quality: 0.98
+            },
+            html2canvas: {
+                scale: 2
+            },
+            jsPDF: {
+                unit: 'in',
+                format: 'a4',
+                orientation: 'portrait'
+            }
+        };
+
+        // New Promise-based usage:
+        html2pdf().set(opt).from(element).save();
+    }
+</script>
 
 <?php include 'footer.php'; ?>
